@@ -1,1 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Gnoke SignalTower</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet"       href="../style.css" />
+  <link rel="icon"             type="image/png" href="../global.png" />
+  <link rel="apple-touch-icon" href="../global.png" />
+  <link rel="manifest"         href="../manifest.json" />
+
+  <!-- Anti-FOUC: apply saved theme before first paint -->
+  <script>
+    (function () {
+      var t = localStorage.getItem('gnoke_signaltower_theme');
+      if (t) document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('../sw.js');
+    }
+  </script>
+</head>
+<body>
+
+<!-- ════════════ TOPBAR ════════════ -->
+<div id="topbar">
+
+  <button id="hamburger" title="Menu" aria-label="Open menu">&#9776;</button>
+
+  <div id="brand" onclick="loadPage('main-page')" title="Control">
+    <span id="brand-gnoke">Gnoke</span>
+    <span id="brand-app">SignalTower</span>
+  </div>
+
+  <span id="context-info"></span>
+
+  <div class="topbar-spacer"></div>
+
+  <div class="menu-group" id="menu-group">
+
+    <div class="menu">
+      <button class="menu-btn" id="menu-control" onclick="loadPage('main-page')">Control</button>
+    </div>
+
+    <div class="menu">
+      <button class="menu-btn" id="menu-patterns" onclick="loadPage('patterns-page')">Patterns</button>
+    </div>
+
+    <div class="menu">
+      <button class="menu-btn" id="menu-config" onclick="loadPage('config-page')">Config</button>
+    </div>
+
+    <div class="menu">
+      <button class="menu-btn">About</button>
+      <div class="menu-content">
+        <button onclick="loadPage('about-page')">About SignalTower</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="topbar-right">
+    <span id="status-chip">saved</span>
+    <button class="icon-btn" id="theme-toggle" title="Toggle theme">🌙</button>
+  </div>
+
+</div>
+
+
+<!-- ════════════ PAGES ════════════ -->
+<main class="pages">
+
+  <!-- ── CONTROL PAGE ────────────────────────────────────── -->
+  <section id="main-page" class="page active">
+    <div class="page-content">
+
+      <!-- Mode display -->
+      <div class="mode-display">
+        <div>
+          <div class="mode-label">Current Mode</div>
+          <div class="mode-value" id="mode-text">Standby</div>
+        </div>
+        <div class="hw-badge">
+          <div class="hw-dot idle" id="hw-dot"></div>
+          <span id="hw-label">Simulation</span>
+        </div>
+      </div>
+
+      <!-- Signal tower visual -->
+      <div class="tower-wrap">
+        <div class="tower-cap-label">Andon Stack Light</div>
+        <div class="tower-stack">
+          <div id="l-red"   class="tower-light red"   data-label="STOP"></div>
+          <div id="l-amber" class="tower-light amber"  data-label="CAUTION"></div>
+          <div id="l-green" class="tower-light green"  data-label="NORMAL"></div>
+        </div>
+        <div class="tower-pole"></div>
+      </div>
+
+      <!-- Mode buttons -->
+      <div class="mode-grid">
+        <button class="mode-btn emergency" onclick="Tower.setMode('emergency')" data-mode="emergency">
+          <span class="mode-icon">🚨</span>
+          <span class="mode-name">Emergency</span>
+          <span class="mode-desc">Critical alert</span>
+        </button>
+        <button class="mode-btn warning" onclick="Tower.setMode('warning')" data-mode="warning">
+          <span class="mode-icon">⚠️</span>
+          <span class="mode-name">Warning</span>
+          <span class="mode-desc">Attention needed</span>
+        </button>
+        <button class="mode-btn normal" onclick="Tower.setMode('normal')" data-mode="normal">
+          <span class="mode-icon">✅</span>
+          <span class="mode-name">Normal</span>
+          <span class="mode-desc">All systems OK</span>
+        </button>
+        <button class="mode-btn off" onclick="Tower.setMode('off')" data-mode="off">
+          <span class="mode-icon">⏻</span>
+          <span class="mode-name">Standby</span>
+          <span class="mode-desc">System off</span>
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ── PATTERNS PAGE ───────────────────────────────────── -->
+  <section id="patterns-page" class="page">
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Patterns</h1>
+          <p class="sub">Timed light sequences</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="Tower.clearAll(); updateModeUI('off')">⏹ Stop</button>
+      </div>
+
+      <!-- Andon stack light — horizontal circles -->
+      <div class="tower-wrap tower-horizontal">
+        <div class="tower-cap-label">Andon Stack Light</div>
+        <div class="tower-row">
+          <div class="tower-circle red"   id="p-red"   data-label="STOP"></div>
+          <div class="tower-circle amber" id="p-amber" data-label="CAUTION"></div>
+          <div class="tower-circle green" id="p-green" data-label="NORMAL"></div>
+        </div>
+      </div>
+
+      <div class="pattern-section">
+        <div class="pattern-section-title">🚨 Emergency</div>
+        <div class="pattern-grid">
+          <button class="pattern-btn" data-pattern="flash-red"   onclick="runPattern('flash-red')">Fast Flash</button>
+          <button class="pattern-btn" data-pattern="strobe-red"  onclick="runPattern('strobe-red')">Strobe</button>
+          <button class="pattern-btn" data-pattern="pulse-red"   onclick="runPattern('pulse-red')">Pulse</button>
+        </div>
+      </div>
+
+      <div class="pattern-section">
+        <div class="pattern-section-title">⚠️ Warning</div>
+        <div class="pattern-grid">
+          <button class="pattern-btn" data-pattern="blink-amber"  onclick="runPattern('blink-amber')">Slow Blink</button>
+          <button class="pattern-btn" data-pattern="double-amber" onclick="runPattern('double-amber')">Double Flash</button>
+          <button class="pattern-btn" data-pattern="fade-amber"   onclick="runPattern('fade-amber')">Fade</button>
+        </div>
+      </div>
+
+      <div class="pattern-section">
+        <div class="pattern-section-title">🔧 Operational</div>
+        <div class="pattern-grid">
+          <button class="pattern-btn" data-pattern="chase-up"   onclick="runPattern('chase-up')">Chase Up</button>
+          <button class="pattern-btn" data-pattern="chase-down" onclick="runPattern('chase-down')">Chase Down</button>
+          <button class="pattern-btn" data-pattern="alternate"  onclick="runPattern('alternate')">Alternate</button>
+          <button class="pattern-btn" data-pattern="cycle-all"  onclick="runPattern('cycle-all')">Full Cycle</button>
+        </div>
+      </div>
+
+      <div class="pattern-section">
+        <div class="pattern-section-title">✅ Status</div>
+        <div class="pattern-grid">
+          <button class="pattern-btn" data-pattern="steady-green" onclick="runPattern('steady-green')">Steady</button>
+          <button class="pattern-btn" data-pattern="heartbeat"    onclick="runPattern('heartbeat')">Heartbeat</button>
+          <button class="pattern-btn" data-pattern="all-test"     onclick="runPattern('all-test')">System Test</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ── CONFIG PAGE ─────────────────────────────────────── -->
+  <section id="config-page" class="page">
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>Config</h1>
+          <p class="sub">Hardware &amp; timing settings</p>
+        </div>
+      </div>
+
+      <!-- Hardware output -->
+      <div class="config-card">
+        <div class="config-row">
+          <div>
+            <label for="hw-mode">Hardware Output</label>
+            <div class="config-hint">Control a physical device during patterns</div>
+          </div>
+          <select id="hw-mode" style="max-width:180px;" onchange="Tower.updateHardware()">
+            <option value="none">Simulation Only</option>
+            <option value="torch">Device Torch</option>
+          </select>
+        </div>
+        <div class="config-row">
+          <div>
+            <label>Torch note</label>
+            <div class="config-hint">Activates your phone's rear camera torch as a physical output</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timing -->
+      <div class="config-card">
+        <div class="config-row">
+          <label for="flash-rate">Flash Rate</label>
+          <input type="number" id="flash-rate" value="200" min="50" max="2000" step="50"
+                 style="width:90px;" onchange="Tower.saveSetting('flashRate', this.value)" />
+        </div>
+        <div class="config-row">
+          <label for="strobe-rate">Strobe Speed</label>
+          <input type="number" id="strobe-rate" value="100" min="50" max="500" step="25"
+                 style="width:90px;" onchange="Tower.saveSetting('strobeRate', this.value)" />
+        </div>
+      </div>
+
+      <!-- Audio & Haptic -->
+      <div class="config-card">
+        <div class="config-row">
+          <label for="audio-enable">Audio Alarm</label>
+          <input type="checkbox" id="audio-enable" onchange="Tower.saveSetting('audioEnabled', this.checked)" />
+        </div>
+        <div class="config-row">
+          <label for="haptic-enable">Haptic Feedback</label>
+          <input type="checkbox" id="haptic-enable" checked onchange="Tower.saveSetting('hapticEnabled', this.checked)" />
+        </div>
+        <div class="config-row">
+          <label for="alarm-freq">Alarm Frequency (Hz)</label>
+          <input type="number" id="alarm-freq" value="880" min="200" max="2000" step="50"
+                 style="width:90px;" onchange="Tower.saveSetting('alarmFreq', this.value)" />
+        </div>
+      </div>
+
+      <!-- Concept info -->
+      <div class="form-card" style="margin-top:4px;">
+        <div class="card-title">⚡ The Gnokestation Concept</div>
+        <p class="hint">
+          Web browsers <strong>directly controlling physical hardware</strong> — without proprietary HMI systems or installed software.<br><br>
+          <strong>This demo:</strong> Browser → Device Torch<br>
+          <strong>Industrial:</strong> Browser → GPIO/Relays → Signal Tower<br>
+          <strong>Enterprise:</strong> Browser → PLC APIs → Factory Equipment<br><br>
+          Your browser becomes the universal HMI controller.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ── ABOUT PAGE ──────────────────────────────────────── -->
+  <section id="about-page" class="page">
+    <div class="page-content">
+
+      <div class="page-header">
+        <div>
+          <h1>About</h1>
+          <p class="sub">Gnoke SignalTower · v1.0</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-check-update">🔄 Check for Updates</button>
+      </div>
+
+      <div class="card-grid">
+
+        <div class="form-card">
+          <div class="card-title">🚦 SignalTower</div>
+          <p class="hint">
+            An industrial Andon stack light controller that runs entirely in the browser.
+            Control light modes, run timed patterns, and optionally drive real hardware
+            via your device's torch.<br><br>
+            Your data never leaves the device.
+          </p>
+        </div>
+
+        <div class="form-card">
+          <div class="card-title">⚙️ Under The Hood</div>
+          <table class="about-table">
+            <tbody id="about-tech-table"></tbody>
+          </table>
+        </div>
+
+        <div class="form-card">
+          <div class="card-title">👤 Author</div>
+          <p class="hint">
+            <strong>Edmund Sparrow</strong><br />
+            Part of the <strong>Gnoke Suite</strong> — offline-first tools
+            for developers, retailers, and independent builders.
+          </p>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+            <a class="btn btn-outline btn-sm" href="mailto:edmundsparrow@gmail.com">✉ Email</a>
+            <a class="btn btn-outline btn-sm" href="https://github.com/edmundsparrow" target="_blank" rel="noopener">⌥ GitHub</a>
+            <a class="btn btn-outline btn-sm" href="https://selar.com/showlove/edmundsparrow" target="_blank" rel="noopener">❤️ Coffee</a>
+          </div>
+        </div>
+
+        <div class="form-card" id="update-card">
+          <div class="card-title">🔄 Updates</div>
+          <p class="hint">
+            Running <strong>v1.0</strong>.
+            Click "Check for Updates" to compare against the latest GitHub release.
+          </p>
+        </div>
+
+        <div class="form-card">
+          <div class="card-title">📜 License</div>
+          <p class="hint">
+            Free and open source under the
+            <strong>GNU General Public License v3.0</strong>.<br /><br />
+            Use it, modify it, share it — but keep it open.
+            Commercial use requires explicit permission from the author.
+          </p>
+          <p class="hint" style="margin-top:10px;font-family:var(--font-mono);font-size:.68rem;color:var(--muted)">
+            © 2026 Edmund Sparrow — Gnoke Suite
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+
+<!-- ════════════ MODALS ════════════ -->
+
+<!-- Torch permission modal -->
+<div class="modal-overlay" id="torch-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🔦 Device Torch Access</h3>
+      <button class="modal-close" onclick="UI.closeModal('torch-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      SignalTower will request camera access to control your device's torch.
+      The camera feed is never recorded or stored — only the torch state is used.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('hw-mode').value='none'; UI.closeModal('torch-modal');">Cancel</button>
+      <button class="btn btn-primary" onclick="Tower.requestTorch(); UI.closeModal('torch-modal');">Allow Access</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ════════════ DRAWER ════════════ -->
+<div id="drawer-overlay" onclick="Drawer.close()"></div>
+
+<nav id="drawer" aria-label="Mobile navigation">
+  <div id="drawer-header">
+    <div id="drawer-brand">
+      <span id="drawer-gnoke">Gnoke</span>
+      <span id="drawer-app">SignalTower</span>
+    </div>
+    <button id="drawer-close" onclick="Drawer.close()" title="Close">✕</button>
+  </div>
+
+  <div class="drawer-section">Navigate</div>
+  <button class="drawer-btn" id="drawer-control"  onclick="loadPage('main-page');    Drawer.close();">🚦 Control</button>
+  <button class="drawer-btn" id="drawer-patterns" onclick="loadPage('patterns-page'); Drawer.close();">⚡ Patterns</button>
+  <button class="drawer-btn" id="drawer-config"   onclick="loadPage('config-page');   Drawer.close();">🔧 Config</button>
+
+  <div class="drawer-section">More</div>
+  <button class="drawer-btn" onclick="loadPage('about-page'); Drawer.close();">ℹ️ About SignalTower</button>
+</nav>
+
+
+<!-- ════════════ SCRIPTS ════════════ -->
+<!-- Load order: state → theme → ui → tower → update → app -->
+<script src="../js/state.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/ui.js"></script>
+<script src="../js/tower.js"></script>
+<script src="../js/update.js"></script>
+<script src="../js/app.js"></script>
+
+</body>
+</html>
