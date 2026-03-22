@@ -1,0 +1,22 @@
+{
+  "name": "Gnoke SignalTower",
+  "short_name": "SignalTower",
+  "description": "Industrial Andon stack light controller. Portable. Private. Persistent.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f7f2ec",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "global.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "global.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
