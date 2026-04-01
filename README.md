@@ -8,7 +8,7 @@ A web app that recreates $5,000 industrial signal tower functionality using just
 
 ## Live Demo
 
-**[signaltower.netlify.app](http://signaltower.netlify.app)**
+**[edmundsparrow.github.io/signaltower](http://edmundsparrow.github.io/signaltower)**
 
 ---
 
